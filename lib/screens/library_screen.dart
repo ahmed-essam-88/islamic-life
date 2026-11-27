@@ -5,6 +5,7 @@ import 'quran_screens.dart';
 import 'fiqh_screens.dart';
 import 'ramadan_seerah.dart';
 import 'adhkar_screens.dart';
+import 'prophets_screen.dart';
 
 class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});
@@ -16,6 +17,7 @@ class LibraryScreen extends StatelessWidget {
       (Icons.spa, 'الأذكار وحصن المسلم', 'أذكار الصباح والمساء وأدعية حصن المسلم', const AdhkarScreen()),
       (Icons.star_border, 'أسماء الله الحسنى', 'الأسماء مع المعاني', const NamesScreen()),
       (Icons.balance, 'الفقه والعبادات', 'ملخصات مبسطة للأبواب الأساسية', const FiqhScreen()),
+      (Icons.groups, 'قصص الأنبياء', 'قصص 25 نبياً مع مواضعها في القرآن', const ProphetsScreen()),
       (Icons.timeline, 'السيرة النبوية', 'خط زمني للسيرة والخلفاء الراشدين', const SeerahScreen()),
     ];
     return Scaffold(

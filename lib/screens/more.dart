@@ -10,6 +10,7 @@ import 'fiqh_screens.dart';
 import 'adhkar_screens.dart';
 import 'prayer_screens.dart';
 import 'account.dart';
+import 'prophets_screen.dart';
 import 'library_screen.dart';
 
 class MoreScreen extends StatelessWidget {
@@ -28,6 +29,8 @@ class MoreScreen extends StatelessWidget {
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NamesScreen()))),
           ListTile(leading: const Icon(Icons.nightlight_round), title: const Text('رمضان والمواسم'),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RamadanScreen()))),
+          ListTile(leading: const Icon(Icons.groups), title: const Text('قصص الأنبياء'),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProphetsScreen()))),
           ListTile(leading: const Icon(Icons.timeline), title: const Text('السيرة النبوية والخلفاء'),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SeerahScreen()))),
           ListTile(leading: const Icon(Icons.balance), title: const Text('الفقه والعبادات'),
@@ -88,6 +91,7 @@ class SourcesScreen extends StatelessWidget {
           Text('أذكار الصباح والمساء: Seen-Arabic/Morning-And-Evening-Adhkar-DB (رخصة MIT).'),
           SizedBox(height: 8),
           Text('حصن المسلم: سعيد بن علي القحطاني، بنسخة JSON من rn0x/hisn_almuslim_json.'),
+          Text('قصص الأنبياء: مجموعة mohammed-2-5/islamic-library-data (بدون ملف ترخيص صريح، المحتوى غير مراجَع شرعياً).'),
           SizedBox(height: 8),
           Text('مواقيت الصلاة والقبلة: مكتبة adhan (حساب فلكي محلي). التقويم الهجري: مكتبة hijri (أم القرى).'),
         ]),

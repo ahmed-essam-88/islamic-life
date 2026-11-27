@@ -8,6 +8,8 @@
 - الأذكار (الصباح والمساء + حصن المسلم) مع المصدر، عداد، مفضلة، مسبحة.
 - كتب الحديث (تسعة كتب)، أسماء الله الحسنى، دروس واختبارات، رمضان والمواسم، السيرة، الفقه، المكتبة، إشعارات محلية.
 
+- الإصدار 1.2.0: قراءة السورة متصلة بنمط المصحف، أدوات القارئ والتشغيل في أعلى الشاشة مع تمييز الآية التي تُتلى، الأجزاء مجمّعة، وقصص الأنبياء.
+
 ## الحسابات والمزامنة (اختيارية)
 - تسجيل الدخول بالبريد وكلمة المرور عبر Firebase Auth. التطبيق يعمل كاملاً بدون حساب.
 - عند تسجيل الدخول تُزامَن مع Firestore: العلامات، الحفظ، أذكار المفضلة، آخر قراءة، وعدّاد المسبحة (دمج محلي أولاً). المستند users/{uid} يقرؤه ويكتبه صاحبه فقط حسب قواعد الأمان.
@@ -17,7 +19,7 @@
 - تسجيل الدخول بجوجل غير متاح حالياً.
 
 ## المصادر
-انظر شاشة "المصادر" داخل التطبيق: AlQuran Cloud (نص المصحف، التفسير الميسر، Saheeh International)، everyayah.com، fawazahmed0/hadith-api (Unlicense)، Seen-Arabic/Morning-And-Evening-Adhkar-DB (MIT)، rn0x/hisn_almuslim_json (حصن المسلم - الترخيص غير محدد في المستودع)، anno143/99-Names-of-Allah-Asma-ul-Husna-JSON-Dataset (الأسماء - لا يوجد ملف ترخيص)، adhan, hijri. خطوط: Amiri Quran و Cairo (OFL).
+انظر شاشة "المصادر" داخل التطبيق: AlQuran Cloud (نص المصحف، التفسير الميسر، Saheeh International)، everyayah.com، fawazahmed0/hadith-api (Unlicense)، Seen-Arabic/Morning-And-Evening-Adhkar-DB (MIT)، rn0x/hisn_almuslim_json (حصن المسلم - الترخيص غير محدد في المستودع)، anno143/99-Names-of-Allah-Asma-ul-Husna-JSON-Dataset (الأسماء - لا يوجد ملف ترخيص)، mohammed-2-5/islamic-library-data (قصص الأنبياء - لا يوجد ملف ترخيص صريح ومصدر الصياغة غير موثق)، adhan, hijri. خطوط: Amiri Quran و Cairo (OFL).
 
 ## تنبيهات
 - المحتوى الديني لم يُراجَع شرعيًا من جهة علمية، فارجع لأهل العلم.

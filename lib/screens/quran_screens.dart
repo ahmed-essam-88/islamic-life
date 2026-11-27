@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import '../theme.dart';
@@ -79,23 +80,38 @@ class _QuranIndexScreenState extends State<QuranIndexScreen> {
   Widget _body(QuranData d) {
     switch (_mode) {
       case 1:
+        // Juz grouped: one expandable card per juz listing its surah parts.
+        final parts = <int, List<Ayah>>{};
+        for (final sr in d.surahs) {
+          int? lastJ;
+          for (final a in sr.ayahs) {
+            if (a.juz != lastJ) {
+              (parts[a.juz] ??= []).add(a);
+              lastJ = a.juz;
+            }
+          }
+        }
         return ListView.builder(
+          padding: const EdgeInsets.all(8),
           itemCount: 30,
           itemBuilder: (c, i) {
             final j = i + 1;
-            Ayah? first;
-            for (final s in d.surahs) {
-              for (final a in s.ayahs) {
-                if (a.juz == j) { first = a; break; }
-              }
-              if (first != null) break;
-            }
-            final f = first!;
-            return ListTile(
-              leading: CircleAvatar(child: Text(ar(j))),
-              title: Text('الجزء ${ar(j)}'),
-              subtitle: Text('يبدأ من ${d.surahs[f.surah - 1].name} آية ${ar(f.inSurah)}'),
-              onTap: () => open(context, f.surah, f.inSurah),
+            final ps = parts[j] ?? [];
+            return Card(
+              child: ExpansionTile(
+                leading: CircleAvatar(child: Text(ar(j))),
+                title: Text('الجزء ${ar(j)}'),
+                subtitle: ps.isEmpty ? null : Text('يبدأ من ${d.surahs[ps.first.surah - 1].name} آية ${ar(ps.first.inSurah)}'),
+                children: [
+                  for (final a in ps)
+                    ListTile(
+                      dense: true,
+                      title: Text('${d.surahs[a.surah - 1].name} - من آية ${ar(a.inSurah)}'),
+                      trailing: const Icon(Icons.chevron_left),
+                      onTap: () => open(context, a.surah, a.inSurah),
+                    ),
+                ],
+              ),
             );
           },
         );
@@ -205,34 +221,48 @@ class SurahReader extends StatefulWidget {
   State<SurahReader> createState() => _SurahReaderState();
 }
 
+/// Mushaf-style reader: the surah flows as continuous text (in blocks of
+/// [_blk] ayahs so playback can scroll). Controls sit at the TOP.
 class _SurahReaderState extends State<SurahReader> {
+  static const _blk = 6;
   final _player = AudioPlayer();
-  final _scroll = ScrollController();
   String _reciter = 'Alafasy_128kbps';
   double _speed = 1.0;
-  int _repeat = 1; // times each ayah is repeated
-  int _playing = 0; // ayah number in surah, 0 = none
+  int _repeat = 1;
+  int _playing = 0;
+  int _selected = 0;
   bool _showTranslation = false;
   bool _stop = false;
   late final Surah s = QuranData.i.surahs[widget.surah - 1];
+  late final int _blocks = (s.ayahCount + _blk - 1) ~/ _blk;
   final _keys = <int, GlobalKey>{};
+  final _taps = <int, TapGestureRecognizer>{};
 
   @override
   void initState() {
     super.initState();
+    _selected = widget.startAyah;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final k = _keys[widget.startAyah];
-      if (k?.currentContext != null && widget.startAyah > 1) {
-        Scrollable.ensureVisible(k!.currentContext!);
-      }
+      if (widget.startAyah > 1) _reveal(widget.startAyah, animate: false);
     });
   }
 
   @override
   void dispose() {
     _stop = true;
+    for (final t in _taps.values) {
+      t.dispose();
+    }
     _player.dispose();
     super.dispose();
+  }
+
+  void _reveal(int ayah, {bool animate = true}) {
+    final k = _keys[(ayah - 1) ~/ _blk];
+    if (k?.currentContext != null) {
+      Scrollable.ensureVisible(k!.currentContext!,
+          duration: Duration(milliseconds: animate ? 350 : 1), alignment: 0.1);
+    }
   }
 
   String _url(int ayah) =>
@@ -243,12 +273,9 @@ class _SurahReaderState extends State<SurahReader> {
     for (var a = ayah; a <= s.ayahCount && !_stop; a++) {
       for (var r = 0; r < _repeat && !_stop; r++) {
         if (!mounted) return;
-        setState(() => _playing = a);
-        final k = _keys[a];
-        if (k?.currentContext != null) {
-          Scrollable.ensureVisible(k!.currentContext!,
-              duration: const Duration(milliseconds: 300));
-        }
+        setState(() { _playing = a; _selected = a; });
+        Store.i.setLastRead(s.number, a);
+        _reveal(a);
         try {
           await _player.setUrl(_url(a));
           await _player.setSpeed(_speed);
@@ -271,6 +298,13 @@ class _SurahReaderState extends State<SurahReader> {
     _stop = true;
     await _player.stop();
     if (mounted) setState(() => _playing = 0);
+  }
+
+  Future<void> _skip(int d) async {
+    final n = ((_playing == 0 ? _selected : _playing) + d).clamp(1, s.ayahCount);
+    await _halt();
+    await Future.delayed(const Duration(milliseconds: 80));
+    _playFrom(n);
   }
 
   void _details(Ayah a) {
@@ -300,6 +334,139 @@ class _SurahReaderState extends State<SurahReader> {
     );
   }
 
+  void _ayahMenu(Ayah a) {
+    setState(() => _selected = a.inSurah);
+    Store.i.setLastRead(s.number, a.inSurah);
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(padding: const EdgeInsets.all(12),
+              child: Text('${s.name} - آية ${ar(a.inSurah)}', style: const TextStyle(fontWeight: FontWeight.bold))),
+          ListTile(leading: const Icon(Icons.play_arrow), title: const Text('تشغيل من هذه الآية'),
+              onTap: () { Navigator.pop(context); _halt().then((_) => _playFrom(a.inSurah)); }),
+          ListTile(
+              leading: Icon(Store.i.isBookmarked(s.number, a.inSurah) ? Icons.bookmark : Icons.bookmark_border),
+              title: const Text('علامة'),
+              onTap: () { Store.i.toggleBookmark(s.number, a.inSurah); Navigator.pop(context); }),
+          ListTile(
+              leading: Icon(Store.i.memorized.contains('${s.number}:${a.inSurah}') ? Icons.check_circle : Icons.check_circle_outline),
+              title: const Text('حفظتها'),
+              onTap: () {
+                final k = '${s.number}:${a.inSurah}';
+                Store.i.setMemorized(s.number, a.inSurah, !Store.i.memorized.contains(k));
+                Navigator.pop(context);
+              }),
+          ListTile(leading: const Icon(Icons.menu_book_outlined), title: const Text('التفسير والترجمة'),
+              onTap: () { Navigator.pop(context); _details(a); }),
+        ]),
+      ),
+    );
+  }
+
+  Widget _controls() {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      elevation: 3,
+      color: cs.surface,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Row(children: [
+            IconButton(icon: const Icon(Icons.skip_next), tooltip: 'السابقة', onPressed: () => _skip(-1)),
+            IconButton.filled(
+              iconSize: 30,
+              icon: Icon(_playing == 0 ? Icons.play_arrow : Icons.stop),
+              onPressed: () => _playing == 0 ? _playFrom(_selected) : _halt(),
+            ),
+            IconButton(icon: const Icon(Icons.skip_previous), tooltip: 'التالية', onPressed: () => _skip(1)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: _reciter,
+                  items: [for (final e in reciters.entries) DropdownMenuItem(value: e.key, child: Text(e.value, overflow: TextOverflow.ellipsis))],
+                  onChanged: (v) {
+                    setState(() => _reciter = v!);
+                    if (_playing != 0) { final n = _playing; _halt().then((_) => _playFrom(n)); }
+                  },
+                ),
+              ),
+            ),
+          ]),
+          Row(children: [
+            Text(_playing == 0 ? 'آية ${ar(_selected)}' : 'تُتلى الآن: آية ${ar(_playing)}',
+                style: TextStyle(color: cs.primary, fontWeight: FontWeight.bold)),
+            const Spacer(),
+            ActionChip(
+              label: Text('×$_speed'),
+              avatar: const Icon(Icons.speed, size: 16),
+              onPressed: () {
+                const v = [0.75, 1.0, 1.25, 1.5];
+                setState(() => _speed = v[(v.indexOf(_speed) + 1) % v.length]);
+                _player.setSpeed(_speed);
+              },
+            ),
+            const SizedBox(width: 6),
+            ActionChip(
+              label: Text('تكرار ${ar(_repeat)}'),
+              avatar: const Icon(Icons.repeat, size: 16),
+              onPressed: () => setState(() => _repeat = _repeat % 5 + 1),
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  Widget _block(int bi, Store store) {
+    final from = bi * _blk, to = (from + _blk).clamp(0, s.ayahCount);
+    final fs = store.quranFont;
+    final spans = <InlineSpan>[];
+    for (final a in s.ayahs.sublist(from, to)) {
+      final active = _playing == a.inSurah;
+      final sel = _selected == a.inSurah && _playing == 0;
+      final mem = store.memorized.contains('${s.number}:${a.inSurah}');
+      final bm = store.isBookmarked(s.number, a.inSurah);
+      final rec = _taps.putIfAbsent(a.inSurah, () => TapGestureRecognizer());
+      rec.onTap = () => _ayahMenu(a);
+      final bg = active
+          ? gold.withOpacity(0.38)
+          : sel ? gold.withOpacity(0.12) : null;
+      spans.add(TextSpan(
+        text: '${a.text} ',
+        recognizer: rec,
+        style: TextStyle(
+            fontFamily: 'AmiriQuran', fontSize: fs, height: 2.3,
+            backgroundColor: bg,
+            color: mem ? Theme.of(context).colorScheme.primary : null),
+      ));
+      spans.add(TextSpan(
+        text: '\u06DD${ar(a.inSurah)}${a.sajda ? ' ۩' : ''} ',
+        recognizer: rec,
+        style: TextStyle(fontFamily: 'AmiriQuran', fontSize: fs, color: gold, height: 2.3, backgroundColor: bg),
+      ));
+    }
+    return Column(key: _keys.putIfAbsent(bi, () => GlobalKey()), crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        child: Text.rich(TextSpan(children: spans), textAlign: TextAlign.justify),
+      ),
+      if (_showTranslation)
+        for (final a in s.ayahs.sublist(from, to))
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text('${a.inSurah}. ${QuranData.i.translation[s.number]![a.inSurah] ?? ''}',
+                  style: const TextStyle(fontSize: 13, color: Colors.grey)),
+            ),
+          ),
+      const SizedBox(height: 6),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = Store.i;
@@ -312,84 +479,30 @@ class _SurahReaderState extends State<SurahReader> {
             icon: Icon(_showTranslation ? Icons.translate : Icons.translate_outlined),
             onPressed: () => setState(() => _showTranslation = !_showTranslation),
           ),
-          IconButton(icon: const Icon(Icons.tune), onPressed: _settings),
+          IconButton(icon: const Icon(Icons.text_fields), tooltip: 'حجم الخط', onPressed: _settings),
         ],
       ),
-      body: ListenableBuilder(
-        listenable: store,
-        builder: (c, _) => ListView(
-          controller: _scroll,
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-          children: [
-            if (s.number != 1 && s.number != 9)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
-                    textAlign: TextAlign.center, style: TextStyle(fontFamily: 'AmiriQuran', fontSize: 28)),
-              ),
-            for (final a in s.ayahs) _ayah(a, store),
-          ],
-        ),
-      ),
-      bottomSheet: Material(
-        elevation: 8,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Row(children: [
-            IconButton(
-              icon: Icon(_playing == 0 ? Icons.play_circle : Icons.stop_circle, size: 36),
-              onPressed: () => _playing == 0 ? _playFrom(widget.startAyah) : _halt(),
+      body: Column(children: [
+        _controls(),
+        Expanded(
+          child: ListenableBuilder(
+            listenable: store,
+            builder: (c, _) => ListView(
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 40),
+              children: [
+                if (s.number != 1 && s.number != 9)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text('بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
+                        textAlign: TextAlign.center, style: TextStyle(fontFamily: 'AmiriQuran', fontSize: 28)),
+                  ),
+                for (var i = 0; i < _blocks; i++) _block(i, store),
+                const Padding(padding: EdgeInsets.all(8),
+                    child: Text('اضغط على أي آية للتشغيل أو العلامة أو التفسير.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12))),
+              ],
             ),
-            Expanded(child: Text(
-                _playing == 0 ? reciters[_reciter]! : '${reciters[_reciter]} - آية ${ar(_playing)}',
-                overflow: TextOverflow.ellipsis)),
-            Text('×${_speed}  تكرار ${ar(_repeat)}'),
-          ]),
-        ),
-      ),
-    );
-  }
-
-  Widget _ayah(Ayah a, Store store) {
-    final key = _keys.putIfAbsent(a.inSurah, () => GlobalKey());
-    final bm = store.isBookmarked(s.number, a.inSurah);
-    final mem = store.memorized.contains('${s.number}:${a.inSurah}');
-    final active = _playing == a.inSurah;
-    return Container(
-      key: key,
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: active ? gold.withOpacity(0.18) : null,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        InkWell(
-          onTap: () {
-            store.setLastRead(s.number, a.inSurah);
-            _details(a);
-          },
-          child: Text.rich(TextSpan(children: [
-            TextSpan(text: a.text, style: TextStyle(fontFamily: 'AmiriQuran', fontSize: store.quranFont, height: 2.2)),
-            TextSpan(text: ' \u06DD${ar(a.inSurah)} ',
-                style: TextStyle(fontFamily: 'AmiriQuran', fontSize: store.quranFont, color: gold)),
-          ])),
-        ),
-        if (_showTranslation)
-          Directionality(
-            textDirection: TextDirection.ltr,
-            child: Text(QuranData.i.translation[s.number]![a.inSurah] ?? '',
-                style: const TextStyle(fontSize: 14, color: Colors.grey)),
           ),
-        Row(children: [
-          if (a.sajda) const Padding(padding: EdgeInsets.only(left: 8), child: Text('۩ سجدة', style: TextStyle(color: gold))),
-          const Spacer(),
-          IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.play_arrow), onPressed: () { store.setLastRead(s.number, a.inSurah); _playFrom(a.inSurah); }),
-          IconButton(visualDensity: VisualDensity.compact, icon: Icon(bm ? Icons.bookmark : Icons.bookmark_border), onPressed: () => store.toggleBookmark(s.number, a.inSurah)),
-          IconButton(visualDensity: VisualDensity.compact, icon: Icon(mem ? Icons.check_circle : Icons.check_circle_outline), tooltip: 'حفظتها', onPressed: () => store.setMemorized(s.number, a.inSurah, !mem)),
-          IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.menu_book_outlined), onPressed: () => _details(a)),
-        ]),
-        const Divider(height: 1),
+        ),
       ]),
     );
   }
@@ -401,19 +514,6 @@ class _SurahReaderState extends State<SurahReader> {
         builder: (c, setS) => Padding(
           padding: const EdgeInsets.all(16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('القارئ'),
-            DropdownButton<String>(
-              isExpanded: true,
-              value: _reciter,
-              items: [for (final e in reciters.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
-              onChanged: (v) { setState(() => _reciter = v!); setS(() {}); },
-            ),
-            Text('سرعة التلاوة: ×$_speed'),
-            Slider(min: 0.5, max: 2.0, divisions: 6, value: _speed,
-                onChanged: (v) { setState(() => _speed = v); setS(() {}); _player.setSpeed(v); }),
-            Text('تكرار كل آية: ${ar(_repeat)} (للحفظ)'),
-            Slider(min: 1, max: 10, divisions: 9, value: _repeat.toDouble(),
-                onChanged: (v) { setState(() => _repeat = v.round()); setS(() {}); }),
             Text('حجم الخط: ${Store.i.quranFont.round()}'),
             Slider(min: 18, max: 42, value: Store.i.quranFont,
                 onChanged: (v) { Store.i.quranFont = v; setS(() {}); }),

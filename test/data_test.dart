@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:islamic_life/data/quran.dart';
 import 'package:islamic_life/data/prayer.dart';
 import 'package:islamic_life/screens/adhkar_screens.dart';
+import 'package:islamic_life/screens/names_screen.dart';
+import 'package:islamic_life/data/hadith.dart';
+import 'package:islamic_life/data/lessons.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -31,5 +34,18 @@ void main() {
     final c = await loadAdhkar();
     expect(c.length > 20, true);
     expect(c.first.items.isNotEmpty, true);
+  });
+  test('names, hadith, lessons', () async {
+    final n = await loadNames();
+    expect(n.length, 99);
+    expect(n[0].refs.isNotEmpty, true);
+    final h = await loadBook(hadithBooks.firstWhere((b) => b.id == 'nawawi'));
+    expect(h.items.length, 42);
+    expect(h.items.first.text.contains('الْأَعْمَالُ بِالنِّيَّاتِ') || h.items.first.text.contains('بِالنِّيَّاتِ'), true);
+    for (final l in lessons) {
+      for (final q in l.quiz) {
+        expect(q.answer >= 0 && q.answer < q.options.length, true);
+      }
+    }
   });
 }

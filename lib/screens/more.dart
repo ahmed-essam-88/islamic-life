@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../data/store.dart';
-import '../theme.dart';
+import 'hadith_screens.dart';
+import 'names_screen.dart';
+import 'learn_screens.dart';
 import 'adhkar_screens.dart';
 import 'prayer_screens.dart';
 
@@ -10,6 +12,12 @@ class MoreScreen extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('المزيد')),
         body: ListView(children: [
+          ListTile(leading: const Icon(Icons.auto_stories), title: const Text('الحديث الشريف'),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HadithLibraryScreen()))),
+          ListTile(leading: const Icon(Icons.star_border), title: const Text('أسماء الله الحسنى'),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NamesScreen()))),
+          ListTile(leading: const Icon(Icons.school), title: const Text('التعلم الإسلامي'),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LearnScreen()))),
           ListTile(leading: const Icon(Icons.calendar_month), title: const Text('التقويم الهجري والمناسبات'),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HijriCalendarScreen()))),
           ListTile(leading: const Icon(Icons.explore), title: const Text('اتجاه القبلة'),

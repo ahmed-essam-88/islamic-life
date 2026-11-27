@@ -6,7 +6,10 @@ import '../data/prayer.dart';
 import '../data/quran.dart';
 import '../data/store.dart';
 import '../theme.dart';
+import '../data/hadith.dart';
+import '../data/lessons.dart';
 import 'adhkar_screens.dart';
+import 'learn_screens.dart';
 import 'prayer_screens.dart';
 import 'quran_screens.dart';
 
@@ -89,6 +92,40 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
             },
+          ),
+          FutureBuilder<HadithData>(
+            future: loadBook(hadithBooks.firstWhere((b) => b.id == 'nawawi')),
+            builder: (c, s) {
+              if (!s.hasData) return const SizedBox();
+              final items = s.data!.items;
+              final day = now.difference(DateTime(now.year)).inDays;
+              final h = items[day % items.length];
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('حديث اليوم', style: TextStyle(color: gold, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text(h.text, style: const TextStyle(fontFamily: 'AmiriQuran', fontSize: 19, height: 2.1), maxLines: 8, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 6),
+                    Text('الأربعون النووية - حديث رقم ${ar(h.number)}', style: Theme.of(context).textTheme.bodySmall),
+                  ]),
+                ),
+              );
+            },
+          ),
+          Card(
+            child: Builder(builder: (context) {
+              final day = now.difference(DateTime(now.year)).inDays;
+              final todo = lessons.where((l) => !Store.i.favDhikr.contains('l:${l.id}')).toList();
+              final l = todo.isEmpty ? lessons[day % lessons.length] : todo.first;
+              return ListTile(
+                leading: const Icon(Icons.school, color: emerald),
+                title: Text('درس مقترح: ${l.title}'),
+                subtitle: Text('المستوى: ${l.level}'),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LessonScreen(l: l))),
+              );
+            }),
           ),
           if (upcoming != null)
             Card(

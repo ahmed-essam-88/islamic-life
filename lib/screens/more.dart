@@ -5,6 +5,8 @@ import '../data/store.dart';
 import 'hadith_screens.dart';
 import 'names_screen.dart';
 import 'learn_screens.dart';
+import 'ramadan_seerah.dart';
+import 'fiqh_screens.dart';
 import 'adhkar_screens.dart';
 import 'prayer_screens.dart';
 
@@ -18,6 +20,12 @@ class MoreScreen extends StatelessWidget {
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HadithLibraryScreen()))),
           ListTile(leading: const Icon(Icons.star_border), title: const Text('أسماء الله الحسنى'),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NamesScreen()))),
+          ListTile(leading: const Icon(Icons.nightlight_round), title: const Text('رمضان والمواسم'),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RamadanScreen()))),
+          ListTile(leading: const Icon(Icons.timeline), title: const Text('السيرة النبوية والخلفاء'),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SeerahScreen()))),
+          ListTile(leading: const Icon(Icons.balance), title: const Text('الفقه والعبادات'),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FiqhScreen()))),
           ListTile(leading: const Icon(Icons.school), title: const Text('التعلم الإسلامي'),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LearnScreen()))),
           ListTile(leading: const Icon(Icons.calendar_month), title: const Text('التقويم الهجري والمناسبات'),

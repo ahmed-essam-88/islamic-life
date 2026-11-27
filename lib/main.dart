@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'theme.dart';
 import 'data/store.dart';
+import 'data/auth.dart';
 import 'data/notifications.dart';
 import 'data/quran.dart';
 import 'screens/home.dart';
@@ -14,6 +15,7 @@ import 'screens/more.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Store.i.init();
+  await Auth.init();
   Notifs.init().then((_) => Notifs.reschedule());
   runApp(const IslamicLifeApp());
 }
@@ -30,6 +32,9 @@ ThemeData _theme(Brightness b) {
   return ThemeData(
     useMaterial3: true,
     fontFamily: 'Cairo',
+    pageTransitionsTheme: const PageTransitionsTheme(builders: {
+      TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+    }),
     colorScheme: scheme,
     scaffoldBackgroundColor: scheme.surface,
     appBarTheme: AppBarTheme(

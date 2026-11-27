@@ -9,6 +9,8 @@ import 'ramadan_seerah.dart';
 import 'fiqh_screens.dart';
 import 'adhkar_screens.dart';
 import 'prayer_screens.dart';
+import 'account.dart';
+import 'library_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -16,6 +18,10 @@ class MoreScreen extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('المزيد')),
         body: ListView(children: [
+          ListTile(leading: const Icon(Icons.account_circle), title: const Text('حسابي (اختياري)'),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountScreen()))),
+          ListTile(leading: const Icon(Icons.local_library), title: const Text('المكتبة الإسلامية'),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LibraryScreen()))),
           ListTile(leading: const Icon(Icons.auto_stories), title: const Text('الحديث الشريف'),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HadithLibraryScreen()))),
           ListTile(leading: const Icon(Icons.star_border), title: const Text('أسماء الله الحسنى'),

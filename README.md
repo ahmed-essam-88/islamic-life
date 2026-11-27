@@ -14,3 +14,6 @@
 
 ## البناء
 `flutter pub get && flutter test && flutter build apk --release` أو عبر GitHub Actions.
+
+## الحسابات
+تسجيل الدخول اختياري عبر Firebase Auth (بريد وكلمة مرور) فقط. لا تُخزَّن أي بيانات أخرى على الخادم؛ التقدم والمفضلة محليان على الجهاز.

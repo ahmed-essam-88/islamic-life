@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import '../data/notifications.dart';
 import '../data/store.dart';
 import 'hadith_screens.dart';
 import 'names_screen.dart';
@@ -24,6 +26,8 @@ class MoreScreen extends StatelessWidget {
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QiblaScreen()))),
           ListTile(leading: const Icon(Icons.fingerprint), title: const Text('المسبحة'),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TasbihScreen()))),
+          ListTile(leading: const Icon(Icons.notifications_active), title: const Text('الإشعارات والتنبيهات'),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()))),
           const Divider(),
           ListenableBuilder(
             listenable: Store.i,
@@ -73,5 +77,53 @@ class SourcesScreen extends StatelessWidget {
           SizedBox(height: 8),
           Text('مواقيت الصلاة والقبلة: مكتبة adhan (حساب فلكي محلي). التقويم الهجري: مكتبة hijri (أم القرى).'),
         ]),
+      );
+}
+
+class NotificationSettingsScreen extends StatelessWidget {
+  const NotificationSettingsScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('الإشعارات')),
+        body: ListenableBuilder(
+          listenable: Store.i,
+          builder: (c, _) {
+            final s = Store.i;
+            Future<void> apply(String k, bool v) async {
+              if (v) {
+                final ok = await Notifs.requestPermission();
+                if (!ok && !kIsWeb && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('لم يتم السماح بالإشعارات. فعّلها من إعدادات الهاتف.')));
+                }
+              }
+              s.setFlag(k, v);
+              await Notifs.reschedule();
+            }
+            return ListView(children: [
+              if (kIsWeb) const Padding(padding: EdgeInsets.all(16), child: Text('الإشعارات تعمل على تطبيق الأندرويد فقط.')),
+              SwitchListTile(title: const Text('تنبيه عند دخول وقت الصلاة'), subtitle: const Text('يحتاج تحديد موقعك أو اختيار مدينة'), value: s.flag('n_prayer'), onChanged: (v) => apply('n_prayer', v)),
+              ListTile(
+                title: const Text('تنبيه قبل الصلاة'),
+                trailing: DropdownButton<int>(
+                  value: s.intVal('n_before', 0),
+                  items: const [
+                    DropdownMenuItem(value: 0, child: Text('بدون')),
+                    DropdownMenuItem(value: 5, child: Text('٥ دقائق')),
+                    DropdownMenuItem(value: 10, child: Text('١٠ دقائق')),
+                    DropdownMenuItem(value: 15, child: Text('١٥ دقيقة')),
+                    DropdownMenuItem(value: 30, child: Text('٣٠ دقيقة')),
+                  ],
+                  onChanged: (v) { s.setInt('n_before', v!); Notifs.reschedule(); },
+                ),
+              ),
+              SwitchListTile(title: const Text('أذكار الصباح والمساء'), subtitle: const Text('٦:٣٠ صباحًا و٥:٣٠ مساءً'), value: s.flag('n_adhkar'), onChanged: (v) => apply('n_adhkar', v)),
+              SwitchListTile(title: const Text('تذكير ورد القرآن'), subtitle: const Text('٩:٠٠ مساءً'), value: s.flag('n_quran'), onChanged: (v) => apply('n_quran', v)),
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('ملاحظة: التنبيهات محلية على جهازك. قد يتأخر وصولها دقائق في وضع توفير البطارية. صوت الأذان الكامل غير مضمّن بعد لعدم توفر تسجيل مرخّص؛ الإشعار بصوت النظام.'),
+              ),
+            ]);
+          },
+        ),
       );
 }

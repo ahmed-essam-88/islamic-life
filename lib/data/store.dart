@@ -104,4 +104,16 @@ class Store extends ChangeNotifier {
     _p.setInt('tasbih', v);
     notifyListeners();
   }
+
+  bool flag(String k, [bool d = false]) => _p.getBool('f_$k') ?? d;
+  void setFlag(String k, bool v) {
+    _p.setBool('f_$k', v);
+    notifyListeners();
+  }
+
+  int intVal(String k, int d) => _p.getInt('i_$k') ?? d;
+  void setInt(String k, int v) {
+    _p.setInt('i_$k', v);
+    notifyListeners();
+  }
 }

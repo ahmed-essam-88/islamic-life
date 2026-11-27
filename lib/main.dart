@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'theme.dart';
 import 'data/store.dart';
 import 'data/auth.dart';
+import 'data/sync.dart';
 import 'data/notifications.dart';
 import 'data/quran.dart';
 import 'screens/home.dart';
@@ -16,6 +17,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Store.i.init();
   await Auth.init();
+  Sync.start();
   Notifs.init().then((_) => Notifs.reschedule());
   runApp(const IslamicLifeApp());
 }

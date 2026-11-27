@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../data/auth.dart';
+import '../data/sync.dart';
 import 'dart:async';
 import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
@@ -58,6 +61,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Text('${ar(h.hDay)} ${hijriMonths[h.hMonth - 1]} ${ar(h.hYear)} هـ  -  ${ar(now.day)}/${ar(now.month)}/${ar(now.year)} م',
               style: TextStyle(color: Theme.of(context).hintColor)),
           const SizedBox(height: 14),
+          _announce(),
+          _progress(),
           _prayerCard(i),
           const SizedBox(height: 14),
           Row(children: [
@@ -138,6 +143,49 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ]),
       ),
+    );
+  }
+
+  Widget _progress() {
+    final m = Store.i.memorized.length, b = Store.i.bookmarks.length;
+    final v = m / 6236;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Card(child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('تقدمي في الحفظ', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: v),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            builder: (c, x, _) => LinearProgressIndicator(value: x, minHeight: 10, borderRadius: BorderRadius.circular(8)),
+          ),
+          const SizedBox(height: 6),
+          Text('$m آية محفوظة من 6236  -  $b علامة'),
+        ]),
+      )),
+    );
+  }
+
+  Widget _announce() {
+    if (!Auth.ready) return const SizedBox();
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: Sync.announcements(),
+      builder: (c, s) {
+        final docs = s.data?.docs ?? [];
+        if (docs.isEmpty) return const SizedBox();
+        final d = docs.first;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Card(child: ListTile(
+            leading: Icon(Icons.campaign, color: Theme.of(c).colorScheme.secondary),
+            title: Text(d['title'] ?? ''),
+            subtitle: Text(d['body'] ?? ''),
+          )),
+        );
+      },
     );
   }
 

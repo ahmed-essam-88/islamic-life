@@ -116,4 +116,26 @@ class Store extends ChangeNotifier {
     _p.setInt('i_$k', v);
     notifyListeners();
   }
+
+  // ---- cloud sync helpers ----
+  Map<String, dynamic> exportSync() => {
+        'bm': bookmarks.toList(),
+        'mem': memorized.toList(),
+        'favdk': favDhikr.toList(),
+        'last': lastRead,
+        'tasbih': tasbihTotal,
+      };
+  /// Merge cloud data into local (union for sets, max for counters).
+  void mergeSync(Map<String, dynamic> d) {
+    List<String> l(String k) => ((d[k] as List?) ?? []).map((e) => '$e').toList();
+    _p.setStringList('bm', {...bookmarks, ...l('bm')}.toList());
+    _p.setStringList('mem', {...memorized, ...l('mem')}.toList());
+    _p.setStringList('favdk', {...favDhikr, ...l('favdk')}.toList());
+    final t = (d['tasbih'] as num?)?.toInt() ?? 0;
+    if (t > tasbihTotal) _p.setInt('tasbih', t);
+    if (!_p.containsKey('last') && d['last'] is List) {
+      _p.setStringList('last', (d['last'] as List).map((e) => '$e').toList());
+    }
+    notifyListeners();
+  }
 }

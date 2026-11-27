@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../data/auth.dart';
+import '../data/sync.dart';
+import 'admin.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -61,8 +63,15 @@ class _AccountScreenState extends State<AccountScreen> {
                           const SizedBox(height: 16),
                           Center(child: Text(u.email ?? '', style: const TextStyle(fontSize: 18))),
                           const SizedBox(height: 8),
-                          const Center(child: Text('أنت مسجل الدخول. تبقى بيانات تقدمك محفوظة على جهازك.', textAlign: TextAlign.center)),
+                          const Center(child: Text('أنت مسجل الدخول. تتم مزامنة مفضلتك وتقدمك مع حسابك تلقائياً.', textAlign: TextAlign.center)),
                           const SizedBox(height: 24),
+                          FutureBuilder<bool>(
+                              future: Sync.isAdmin(u),
+                              builder: (c, a) => a.data == true
+                                  ? Padding(padding: const EdgeInsets.only(bottom: 12), child: FilledButton.icon(
+                                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminScreen())),
+                                      icon: const Icon(Icons.admin_panel_settings), label: const Text('لوحة الإدارة')))
+                                  : const SizedBox()),
                           FilledButton.tonalIcon(
                               onPressed: () => FirebaseAuth.instance.signOut(),
                               icon: const Icon(Icons.logout), label: const Text('تسجيل الخروج')),
@@ -88,7 +97,7 @@ class _AccountScreenState extends State<AccountScreen> {
                               child: Text(register ? 'لدي حساب بالفعل' : 'ليس لدي حساب؟ أنشئ حساباً')),
                           if (!register) TextButton(onPressed: _reset, child: const Text('نسيت كلمة المرور')),
                           const SizedBox(height: 8),
-                          const Text('الحساب اختياري. نستخدم Firebase لتسجيل الدخول فقط، ولا نرسل أي بيانات أخرى.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
+                          const Text('الحساب اختياري. عند تسجيل الدخول تُزامَن مفضلتك وتقدمك فقط مع حسابك عبر Firebase.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
                         ]),
                 );
               }),

@@ -42,6 +42,7 @@ HadithData _parse(String raw) {
   final secs = (j['metadata']['sections'] as Map).map((k, v) => MapEntry(int.parse(k), v.toString()));
   final out = <Hadith>[];
   for (final h in j['hadiths'] as List) {
+    if ((h['text'] as String).trim().isEmpty) continue;
     final book = (h['reference']?['book'] ?? 0) as int;
     out.add(Hadith(
       (h['hadithnumber'] as num).toInt(),
